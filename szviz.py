@@ -44,10 +44,42 @@ szArray.SetNumberOfTuples(nx*ny*1)
 szArray.SetVoidArray(sz, nx*ny*1*1, 1)
 szArray.SetName('sznanomaly1314')
 grid.GetPointData().SetScalars(szArray)
+print(f'min/max of sz: {sz.min()}/{sz.max()}')
+
+# create a colourmap
+lut = vtk.vtkLookupTable()
+nc = 32
+lut.SetNumberOfTableValues(nc)
+for i in range(nc):
+	x = i/(nc - 1) # in [0, 1]
+	# negative part
+	r = 0.
+	g = 2*x
+	b = 1.0
+	alpha = 1.0 # opaque
+	if x >= 0.5:
+		# positive side
+		r = 1.0
+		g = 2*(1. - x)
+		b = 0.
+	lut.SetTableValue(i, r, g, b, alpha)
+maxVal = 200.0
+lut.SetRange(-maxVal, maxVal) # for runoff
+lut.SetBelowRangeColor(0.5, 0.5, 0.5, 1.0)
+lut.UseBelowRangeColorOn()
+lut.SetAboveRangeColor(0., 1., 0., 1.0)
+lut.UseAboveRangeColorOn()
+lut.Build()
+print(lut)
+
+colorbar = vtk.vtkScalarBarActor()
+colorbar.SetLookupTable(lut)
+colorbar.Modified()
 
 # create the VTK pipeline
 gridMapper = vtk.vtkDataSetMapper() # this will colour your field
 gridMapper.SetInputData(grid) # connect the grid with its field to the mapper
+gridMapper.SetLookupTable(lut)
 gridActor = vtk.vtkActor()
 gridActor.SetMapper(gridMapper)
 
@@ -64,6 +96,7 @@ iren.SetRenderWindow(renWin)
 
 # Add the actors to the renderer, set the background and size
 ren.AddActor(gridActor)
+ren.AddActor(colorbar)
 ren.SetBackground(1, 1, 1) # white
 renWin.SetSize(900, 900)
 
